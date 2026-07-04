@@ -103,6 +103,12 @@
             font-size: 15px;
             cursor: pointer;
             width: 100%;
+            transition: opacity 0.2s ease;
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .tabs {
@@ -264,7 +270,7 @@
                 placeholder="مثال: موقع لبيع الملابس بستايل عصري وألوان دارقة..."></textarea>
             <input type="text" id="styleContext"
                 placeholder="ستايل/ألوان مفضلة (اختياري) — مثال: dark, minimal, blue accents">
-            <button class="generate-btn" onclick="generateSite()">🚀 صاوب الموقع</button>
+            <button class="generate-btn" id="genBtn" onclick="generateSite()">🚀 صاوب الموقع</button>
         </div>
 
         <div class="tabs">
@@ -278,7 +284,7 @@
                 <button class="build-btn" onclick="showPayModal()">🚀 Build Live Site — $5</button>
             </div>
             <iframe id="previewFrame"
-                srcdoc="<body style='display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;'>الموقع ديالك غادي يبان هنا بعد التوليد ✨</body>"></iframe>
+                srcdoc="<body style='display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;direction:rtl;'>الموقع ديالك غادي يبان هنا بعد التوليد ✨</body>"></iframe>
             <pre id="sourceCode"></pre>
         </div>
     </div>
@@ -288,7 +294,7 @@
             <h3>🚀 احصل على الكود الكامل</h3>
             <p>دفعة واحدة فقط — <strong style="color:#00f0ff;">$5.00</strong><br>تحمل الموقع أو تنسخ الكود جاهز للنشر
             </p>
-            <button class="pay-btn" onclick="buildLiveSite()">💳 ادفع بـ PayPal</button>
+            <button class="pay-btn" id="payBtn" onclick="buildLiveSite()">💳 ادفع بـ PayPal</button>
             <button class="cancel-btn" onclick="closePayModal()">إلغاء</button>
         </div>
     </div>
@@ -306,9 +312,15 @@
         async function generateSite() {
             const prompt = document.getElementById('sitePrompt').value.trim();
             const context = document.getElementById('styleContext').value.trim();
+            const genBtn = document.getElementById('genBtn');
+            
             if (!prompt) { alert("كتب وصف للموقع أولا"); return; }
 
-            document.getElementById('previewFrame').srcdoc = "<body style='display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;'>⏳ Nova كتصاوب الموقع ديالك...</body>";
+            // تعطيل الزر وكتابة رسالة انتظار واضحة لمنع الضغط المتكرر
+            genBtn.disabled = true;
+            genBtn.innerHTML = "⏳ جاري التوليد (قد يستغرق 30 ثانية)...";
+            
+            document.getElementById('previewFrame').srcdoc = "<body style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#fff;background:#0e101f;direction:rtl;'><h2>⏳ Nova كتصاوب الموقع ديالك...</h2><p style='color:#8a8fa3;margin-top:10px;'>إلى كان السيرفر مشغول، الطلب ديالك محطوط فصف الانتظار وغادي يخدم تلقائياً.</p></body>";
 
             try {
                 const res = await fetch('/ask-nova', {
@@ -316,12 +328,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt, context })
                 });
+                
                 const data = await res.json();
                 generatedHTML = data.generated_html;
                 document.getElementById('previewFrame').srcdoc = generatedHTML;
                 document.getElementById('sourceCode').textContent = generatedHTML;
             } catch (err) {
-                document.getElementById('previewFrame').srcdoc = "<body style='color:red;text-align:center;padding:40px;'>❌ خطأ فالاتصال، حاول مرة أخرى</body>";
+                document.getElementById('previewFrame').srcdoc = "<body style='color:#ef4444;background:#0e101f;text-align:center;padding:40px;font-family:sans-serif;direction:rtl;'>❌ خطأ فالاتصال بالسيرفر. تأكد باللي الـ API Key صحيح وعاود جرب.</body>";
+            } finally {
+                // إعادة تفعيل الزر بعد انتهاء العملية سواء نجحت أو فشلت
+                genBtn.disabled = false;
+                genBtn.innerHTML = "🚀 صاوب الموقع";
             }
         }
 
@@ -340,7 +357,11 @@
         }
 
         async function buildLiveSite() {
+            const payBtn = document.getElementById('payBtn');
             try {
+                payBtn.disabled = true;
+                payBtn.innerHTML = "جاري الاتصال بـ PayPal...";
+                
                 const res = await fetch('/build-live-site', { method: 'POST' });
                 const data = await res.json();
                 if (data.redirect_url) {
@@ -350,6 +371,9 @@
                 }
             } catch (err) {
                 alert("❌ خطأ فالاتصال، حاول مرة أخرى");
+            } finally {
+                payBtn.disabled = false;
+                payBtn.innerHTML = "💳 ادفع بـ PayPal";
             }
         }
     </script>
