@@ -34,8 +34,8 @@ def ask_nova():
             f"عطيني كود HTML فقط وبدون أي كتابة أخرى خارج الكود."
         )
         
-        # استخدام نسخة البرو المستقرة والممتازة للأكواد
-        model = genai.GenerativeModel('gemini-1.5-pro')
+        # الاعتماد على نموذج gemini-2.5-flash المتطور والسريع
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(full_prompt)
         
         generated_html = response.text
@@ -59,7 +59,6 @@ def ask_nova():
         
     except Exception as e:
         print(f"Error calling Gemini API: {str(e)}")
-        # إظهار الخطأ بوضوح في الـ Preview في حالة وجود مشكل في الـ API Key
         error_message = f"<body style='color:#ef4444;background:#0e101f;text-align:center;padding:40px;direction:rtl;'>❌ خطأ فالمحرك: {str(e)}</body>"
         return jsonify({'generated_html': error_message}), 500
 
