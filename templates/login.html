@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: radial-gradient(circle at 50% 0%, #0c0d19 0%, #030305 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.08) 0%, transparent 60%);
+            animation: rotateGlow 18s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes rotateGlow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .login-box {
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 420px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.08);
+            text-align: center;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .app-name {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #00f0ff, #6a5cff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .app-subtitle {
+            color: #8a8fa3;
+            font-size: 13px;
+            margin-bottom: 35px;
+            letter-spacing: 1px;
+        }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+            text-align: right;
+        }
+
+        .input-group label {
+            display: block;
+            color: #b8bcd0;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #00f0ff;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            background: linear-gradient(90deg, #00f0ff, #6a5cff);
+            border: none;
+            border-radius: 12px;
+            color: #04040a;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .login-btn:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            margin-top: 25px;
+            color: #555a70;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-box">
+        <div class="app-name">NOVA WEBSITE</div>
+        <div class="app-subtitle">AI Website Builder Engine</div>
+        {% if error %}
+        <div class="error-msg">⚠️ البيانات غير صحيحة، حاول من جديد</div>
+        {% endif %}
+        <form action="/login" method="POST">
+            <div class="input-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" name="username" placeholder="example@gmail.com" required>
+            </div>
+            <div class="input-group">
+                <label>كلمة المرور</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="login-btn">تسجيل الدخول</button>
+        </form>
+        <div class="footer-note">© 2026 Nova Website — Powered by AI</div>
+    </div>
+</body>
+
+</html>
