@@ -7,19 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get(
-    "SECRET_KEY", "nova_ultimate_premium_engine_2026")
+app.secret_key = os.environ.get("SECRET_KEY", "nova_ultimate_premium_engine_2026")
 
 # 🔑 كيقرا من .env تلقائياً
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-os.environ["GOOGLE_API_KEY"] = GEMINI_API_KEY
-
-try:
-    import google.generativeai as genai
-    if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-except ImportError:
-    pass
 
 # 💳 PayPal من .env
 PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID", "")
@@ -30,6 +21,18 @@ SITE_PRICE = "5.00"
 
 # 👑 Admin
 ADMIN_EMAILS = ["abdelhakimelgrich@gmail.com"]
+
+
+def call_gemini(prompt, system_instruction):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {
+        "system_instruction": {"parts": [{"text": system_instruction}]},
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.4}
+    }
+    response = requests.post(url, json=payload)
+    data = response.json()
+    return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def get_paypal_token():
@@ -100,16 +103,10 @@ def ask_nova():
     )
 
     try:
-        import google.generativeai as genai
-        model = genai.GenerativeModel(
-            model_name="gemini-3.5-flash",
-            system_instruction=system_instruction
-        )
-        response = model.generate_content(
+        raw_code = call_gemini(
             f"Build a production-ready complete website for: {site_prompt}",
-            generation_config={"temperature": 0.4}
+            system_instruction
         )
-        raw_code = response.text
         clean_html = re.sub(r'^```html\s*', '', raw_code, flags=re.IGNORECASE)
         clean_html = re.sub(r'^```\s*', '', clean_html)
         clean_html = re.sub(r'\s*```$', '', clean_html)
@@ -155,8 +152,7 @@ def build_live_site():
         )
         data = response.json()
         approve_url = next(
-            (link["href"]
-             for link in data.get("links", []) if link["rel"] == "approve"),
+            (link["href"] for link in data.get("links", []) if link["rel"] == "approve"),
             None
         )
         if not approve_url:
