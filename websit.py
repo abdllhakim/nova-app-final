@@ -1,14 +1,12 @@
 import os
 import re
 import requests
-import uuid  # لإنشاء أسماء ملفات فريدة
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
-# تغيير المفتاح الافتراضي ليكون أكثر أماناً
 app.secret_key = os.environ.get("SECRET_KEY", "nova_ultimate_premium_engine_2026")
 
 # 🔑 كيقرا من .env تلقائياً
@@ -26,30 +24,25 @@ ADMIN_EMAILS = ["abdelhakimelgrich@gmail.com"]
 
 
 def call_gemini(prompt, system_instruction):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "system_instruction": {"parts": [{"text": system_instruction}]},
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.4}
     }
-    # استخدام timeout لمنع بقاء الطلب عالقاً في الذاكرة في حال تأخر رد جوجل
-    response = requests.post(url, json=payload, timeout=30)
+    response = requests.post(url, json=payload)
     data = response.json()
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def get_paypal_token():
-    try:
-        response = requests.post(
-            f"{PAYPAL_BASE_URL}/v1/oauth2/token",
-            headers={"Accept": "application/json", "Accept-Language": "en_US"},
-            data={"grant_type": "client_credentials"},
-            auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET),
-            timeout=15
-        )
-        return response.json().get("access_token")
-    except Exception:
-        return None
+    response = requests.post(
+        f"{PAYPAL_BASE_URL}/v1/oauth2/token",
+        headers={"Accept": "application/json", "Accept-Language": "en_US"},
+        data={"grant_type": "client_credentials"},
+        auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
+    )
+    return response.json().get("access_token")
 
 
 @app.route('/')
@@ -73,15 +66,6 @@ def do_login():
 
 @app.route('/logout')
 def do_logout():
-    # تنظيف الملف المؤقت للمستخدم عند تسجيل الخروج لتوفير المساحة
-    file_id = session.get('last_site_file_id')
-    if file_id:
-        file_path = f"/tmp/{file_id}.html"
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception:
-                pass
     session.clear()
     return redirect(url_for('login_page'))
 
@@ -127,16 +111,7 @@ def ask_nova():
         clean_html = re.sub(r'^```\s*', '', clean_html)
         clean_html = re.sub(r'\s*```$', '', clean_html)
         clean_html = clean_html.strip()
-        
-        # 💡 الحل السحري للذاكرة: حفظ الكود في ملف مؤقت على القرص الصلب وليس في الـ RAM
-        file_id = str(uuid.uuid4())
-        file_path = f"/tmp/{file_id}.html"
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(clean_html)
-            
-        # نضع المعرف فقط في الجلسة لحماية الذاكرة
-        session['last_site_file_id'] = file_id
-
+        session['last_generated_html'] = clean_html
     except Exception as e:
         clean_html = f"<h1>❌ Engine Compile Error</h1><p>{str(e)}</p>"
 
@@ -173,8 +148,7 @@ def build_live_site():
                     "return_url": DOMAIN + "/payment-success",
                     "cancel_url": DOMAIN + "/payment-cancel"
                 }
-            },
-            timeout=15
+            }
         )
         data = response.json()
         approve_url = next(
@@ -201,10 +175,9 @@ def payment_success():
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}"
-            },
-            timeout=15
+            }
         )
-        if capture.status_code == 201 or capture.status_code == 200:
+        if capture.status_code == 201:
             session['can_download'] = True
     except Exception:
         pass
@@ -221,21 +194,7 @@ def download_site():
     if not (session.get('can_download') or session.get('is_admin')):
         return "🔒 خاصك تدفع أولا", 403
 
-    file_id = session.get('last_site_file_id')
-    file_path = f"/tmp/{file_id}.html" if file_id else None
-
-    if file_path and os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            html = f.read()
-        # حذف الملف بعد التحميل للحفاظ على نظافة السيرفر ومساحته
-        try:
-            os.remove(file_path)
-        except Exception:
-            pass
-        session.pop('last_site_file_id', None)
-    else:
-        html = '<h1>ماكاين حتى موقع أو انتهت صلاحية الملف المؤقت، عاود جرب صاوب واحد جديد</h1>'
-
+    html = session.get('last_generated_html', '<h1>ماكاين حتى موقع</h1>')
     session['can_download'] = False
     return html, 200, {
         'Content-Type': 'text/html',
@@ -244,5 +203,4 @@ def download_site():
 
 
 if __name__ == '__main__':
-    # تأكد من إيقاف الـ Debug في سيرفر الرفع دائماً
     app.run(debug=False)
